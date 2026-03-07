@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopee Afiliados - Painel API</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-content">
+        <div>
+            <h1>Shopee Afiliados</h1>
+            <div class="subtitle">Painel de controle da API GraphQL</div>
+        </div>
+        <div class="header-actions">
+            <span class="badge">{{ user_email }}</span>
+            <a href="/logout" class="btn-logout">Sair</a>
+        </div>
+    </div>
+</header>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <div class="tab active" data-tab="produtos"><span class="tab-icon">&#128722;</span>Produtos</div>
+        <div class="tab" data-tab="lojas"><span class="tab-icon">&#127978;</span>Lojas</div>
+        <div class="tab" data-tab="ofertas"><span class="tab-icon">&#127873;</span>Ofertas</div>
+        <div class="tab" data-tab="shortlink"><span class="tab-icon">&#128279;</span>Short Link</div>
+        <div class="tab" data-tab="ranking"><span class="tab-icon">&#127942;</span>Ranking</div>
+        <div class="tab" data-tab="favoritas"><span class="tab-icon">&#11088;</span>Favoritas</div>
+        <div class="tab" data-tab="dashboard"><span class="tab-icon">&#128200;</span>Dashboard</div>
+        <div class="tab" data-tab="historico"><span class="tab-icon">&#128197;</span>Histórico</div>
+        <div class="tab" data-tab="conversao"><span class="tab-icon">&#128176;</span>Conversão</div>
+        <div class="tab" data-tab="validado"><span class="tab-icon">&#9989;</span>Validado</div>
+        <div class="tab" data-tab="configuracoes"><span class="tab-icon">&#9881;</span>Configuracoes</div>
+    </div>
+</div>
+
+<div class="content">
+
+    <!-- Produtos -->
+    <div class="panel active" id="panel-produtos">
+        <h2>Buscar Produtos</h2>
+        <p class="description">Endpoint productOfferV2 - Busque produtos com detalhes de comissão, preço e vendas.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Palavra-chave</label><input type="text" id="prod-keyword" placeholder="Ex: fone bluetooth"></div>
+            <div class="form-group"><label>Tipo de lista</label><select id="prod-listType"><option value="0">Recomendados</option><option value="1" selected>Maior comissão</option><option value="2">Top performance</option></select></div>
+            <div class="form-group"><label>Ordenar por</label><select id="prod-sortType"><option value="1">Relevância</option><option value="2">Mais vendidos</option><option value="3">Maior preço</option><option value="4">Menor preço</option><option value="5" selected>Comissão</option></select></div>
+            <div class="form-group"><label>Resultados por página</label><input type="number" id="prod-limit" value="20" min="1" max="500"></div>
+            <div class="form-group"><label>Página</label><input type="number" id="prod-page" value="1" min="1"></div>
+            <div class="form-group">
+                <div class="checkbox-group"><input type="checkbox" id="prod-isAMS"><label for="prod-isAMS">Comissão do vendedor</label></div>
+                <div class="checkbox-group"><input type="checkbox" id="prod-isKey"><label for="prod-isKey">Apenas Key Sellers</label></div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="buscarProdutos()">Buscar Produtos</button>
+            <button class="btn btn-secondary" onclick="testeRapido()">Teste Rápido ("espelho")</button>
+        </div>
+        <div id="result-produtos" class="results"></div>
+    </div>
+
+    <!-- Lojas -->
+    <div class="panel" id="panel-lojas">
+        <h2>Buscar Lojas</h2>
+        <p class="description">Endpoint shopOfferV2 - Encontre lojas com comissões diferenciadas para afiliados.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Palavra-chave</label><input type="text" id="loja-keyword" placeholder="Ex: eletrônicos"></div>
+            <div class="form-group"><label>Ordenar por</label><select id="loja-sortType"><option value="1">Mais recentes</option><option value="2" selected>Maior comissão</option><option value="3">Popular</option></select></div>
+            <div class="form-group"><label>Tipo de loja</label><select id="loja-shopType" multiple><option value="1" selected>Mall</option><option value="2">Star</option><option value="4" selected>Star+</option></select></div>
+            <div class="form-group"><label>Comissão mínima (%)</label><input type="number" id="loja-minComm" placeholder="Ex: 10" min="0" max="100" step="1"></div>
+            <div class="form-group"><label>Resultados por página</label><input type="number" id="loja-limit" value="10" min="1" max="500"></div>
+            <div class="form-group"><label>Página</label><input type="number" id="loja-page" value="1" min="1"></div>
+            <div class="form-group">
+                <div class="checkbox-group"><input type="checkbox" id="loja-isKey"><label for="loja-isKey">Apenas Key Sellers</label></div>
+            </div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="buscarLojas()">Buscar Lojas</button></div>
+        <div id="result-lojas" class="results"></div>
+    </div>
+
+    <!-- Ofertas -->
+    <div class="panel" id="panel-ofertas">
+        <h2>Ofertas Shopee</h2>
+        <p class="description">Endpoint shopeeOfferV2 - Campanhas promocionais, queimões e coleções especiais.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Palavra-chave</label><input type="text" id="oferta-keyword" placeholder="Ex: promoção"></div>
+            <div class="form-group"><label>Ordenar por</label><select id="oferta-sortType"><option value="1" selected>Mais recentes</option><option value="2">Maior comissão</option></select></div>
+            <div class="form-group"><label>Resultados por página</label><input type="number" id="oferta-limit" value="10" min="1" max="500"></div>
+            <div class="form-group"><label>Página</label><input type="number" id="oferta-page" value="1" min="1"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="buscarOfertas()">Buscar Ofertas</button></div>
+        <div id="result-ofertas" class="results"></div>
+    </div>
+
+    <!-- Short Link -->
+    <div class="panel" id="panel-shortlink">
+        <h2>Gerar Short Link</h2>
+        <p class="description">Endpoint generateShortLink - Converta URLs da Shopee em links curtos de afiliado.</p>
+        <div class="form-grid">
+            <div class="form-group" style="grid-column:1/-1"><label>URL da Shopee</label><input type="url" id="sl-url" placeholder="https://shopee.com.br/produto-exemplo-i.123.456"></div>
+            <div class="form-group" style="grid-column:1/-1"><label>Sub IDs (rastreamento, separados por vírgula, máx 5)</label><input type="text" id="sl-subids" placeholder="Ex: campanha1, instagram, stories"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="gerarShortLink()">Gerar Link</button></div>
+        <div id="result-shortlink" class="results"></div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="panel" id="panel-ranking">
+        <h2>Ranking de Produtos</h2>
+        <p class="description">Compara produtos nos 4 critérios em paralelo: Recomendados, Maior Comissão, Mais Vendidos e Top Performance.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Palavra-chave</label><input type="text" id="rank-keyword" placeholder="Ex: celular"></div>
+            <div class="form-group"><label>Resultados por lista</label><input type="number" id="rank-limit" value="10" min="1" max="50"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="buscarRanking()">Gerar Ranking</button></div>
+        <div id="result-ranking" class="results"></div>
+    </div>
+
+    <!-- Favoritas -->
+    <div class="panel" id="panel-favoritas">
+        <h2>Lojas Favoritas</h2>
+        <p class="description">Monitore o budget e as comissões das suas lojas preferidas. Favorite lojas na aba "Lojas".</p>
+        <div class="btn-group" style="margin-bottom:20px">
+            <button class="btn btn-primary" onclick="atualizarFavoritas()">Atualizar Dados</button>
+            <button class="btn btn-secondary" onclick="carregarFavoritas()">Recarregar</button>
+        </div>
+        <div id="result-favoritas" class="results"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="panel" id="panel-dashboard">
+        <h2>Dashboard de Comissões</h2>
+        <p class="description">Visualize seus ganhos usando o relatório de conversão.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Data início</label><input type="date" id="dash-start"></div>
+            <div class="form-group"><label>Data fim</label><input type="date" id="dash-end"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="carregarDashboard()">Carregar Dashboard</button></div>
+        <div id="result-dashboard" class="results"></div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="panel" id="panel-historico">
+        <h2>Histórico de Preços e Comissões</h2>
+        <p class="description">Acompanhe a evolução dos produtos ao longo do tempo. Salve snapshots da aba Produtos.</p>
+        <div class="btn-group" style="margin-bottom:20px">
+            <button class="btn btn-primary" onclick="carregarHistorico()">Carregar Histórico</button>
+            <button class="btn btn-danger" onclick="limparHistorico()">Limpar Histórico</button>
+        </div>
+        <div id="result-historico" class="results"></div>
+    </div>
+
+    <!-- Conversão -->
+    <div class="panel" id="panel-conversao">
+        <h2>Relatório de Conversão</h2>
+        <p class="description">Endpoint conversionReport - Pedidos, cliques e comissões estimadas.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Data início</label><input type="date" id="conv-start"></div>
+            <div class="form-group"><label>Data fim</label><input type="date" id="conv-end"></div>
+            <div class="form-group"><label>Status do pedido</label><select id="conv-status"><option value="">Todos</option><option value="UNPAID">Não pago</option><option value="PENDING">Pendente</option><option value="COMPLETED">Completo</option><option value="CANCELLED">Cancelado</option></select></div>
+            <div class="form-group"><label>Tipo de comprador</label><select id="conv-buyer"><option value="">Todos</option><option value="NEW">Novo</option><option value="EXISTING">Recorrente</option></select></div>
+            <div class="form-group"><label>Dispositivo</label><select id="conv-device"><option value="">Todos</option><option value="APP">App</option><option value="WEB">Web</option></select></div>
+            <div class="form-group"><label>Resultados por página</label><input type="number" id="conv-limit" value="50" min="1"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="buscarConversao()">Buscar Relatório</button></div>
+        <div id="result-conversao" class="results"></div>
+    </div>
+
+    <!-- Validado -->
+    <div class="panel" id="panel-validado">
+        <h2>Relatório Validado</h2>
+        <p class="description">Endpoint validatedReport - Comissões confirmadas e valores finais a receber.</p>
+        <div class="form-grid">
+            <div class="form-group"><label>Validation ID</label><input type="number" id="val-id" placeholder="Ex: 12345"></div>
+            <div class="form-group"><label>Resultados por página</label><input type="number" id="val-limit" value="100" min="1"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="buscarValidado()">Buscar Relatório</button></div>
+        <div id="result-validado" class="results"></div>
+    </div>
+
+    <!-- Configuracoes -->
+    <div class="panel" id="panel-configuracoes">
+        <h2>Configuracoes</h2>
+        <p class="description">Configure suas credenciais de API para cada servico. Cada usuario tem suas proprias credenciais.</p>
+
+        <div class="settings-section">
+            <h3 class="settings-title">Shopee Affiliate</h3>
+            <p class="settings-desc">Credenciais da API GraphQL Shopee para busca de produtos e ofertas.</p>
+            <div class="form-grid">
+                <div class="form-group"><label>App ID</label><input type="text" id="cred-shopee-app_id" placeholder="Seu App ID"></div>
+                <div class="form-group"><label>Secret</label><input type="password" id="cred-shopee-secret" placeholder="Seu Secret"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary btn-sm" onclick="salvarCredencial('shopee', ['app_id','secret'])">Salvar Shopee</button>
+                <button class="btn btn-danger btn-sm" onclick="removerCredencial('shopee')">Remover</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 class="settings-title">Gemini (IA)</h3>
+            <p class="settings-desc">Chave da API Google Gemini para geracao de anuncios com inteligencia artificial.</p>
+            <div class="form-grid">
+                <div class="form-group" style="grid-column:1/-1"><label>API Key</label><input type="password" id="cred-gemini-api_key" placeholder="Sua API Key do Gemini"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary btn-sm" onclick="salvarCredencial('gemini', ['api_key'])">Salvar Gemini</button>
+                <button class="btn btn-danger btn-sm" onclick="removerCredencial('gemini')">Remover</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 class="settings-title">Telegram</h3>
+            <p class="settings-desc">Token do bot e Chat ID para publicacao de anuncios no Telegram.</p>
+            <div class="form-grid">
+                <div class="form-group"><label>Bot Token</label><input type="password" id="cred-telegram-bot_token" placeholder="123456:ABCdef..."></div>
+                <div class="form-group"><label>Chat ID</label><input type="text" id="cred-telegram-chat_id" placeholder="-1001234567890"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary btn-sm" onclick="salvarCredencial('telegram', ['bot_token','chat_id'])">Salvar Telegram</button>
+                <button class="btn btn-danger btn-sm" onclick="removerCredencial('telegram')">Remover</button>
+            </div>
+        </div>
+
+        <div class="settings-section" id="whatsapp-settings">
+            <h3 class="settings-title">WhatsApp (Evolution API)</h3>
+            <p class="settings-desc">Conecte seu WhatsApp via QR Code e selecione o grupo para publicacao de ofertas.</p>
+
+            <!-- Status da conexao -->
+            <div class="wa-connection-status" id="wa-connection-status">
+                <div class="wa-status-indicator">
+                    <span class="wa-status-dot" id="wa-status-dot"></span>
+                    <span class="wa-status-text" id="wa-status-text">Verificando...</span>
+                </div>
+                <span class="wa-instance-name" id="wa-instance-name"></span>
+            </div>
+
+            <!-- QR Code area -->
+            <div class="wa-qr-area" id="wa-qr-area" style="display:none">
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+                    Escaneie o QR Code com seu WhatsApp (Configuracoes > Aparelhos conectados > Conectar aparelho):
+                </p>
+                <div class="wa-qr-container" id="wa-qr-container">
+                    <div class="loading"><div class="spinner"></div><p>Gerando QR Code...</p></div>
+                </div>
+            </div>
+
+            <!-- Grupo selecionado -->
+            <div class="wa-group-info" id="wa-group-info" style="display:none">
+                <label style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase">Grupo selecionado</label>
+                <div class="wa-selected-group" id="wa-selected-group">Nenhum grupo selecionado</div>
+            </div>
+
+            <!-- Lista de grupos (aparece apos conectar) -->
+            <div class="wa-groups-list" id="wa-groups-list" style="display:none">
+                <label style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;display:block;margin-bottom:8px">Selecione um grupo</label>
+                <div id="wa-groups-container"></div>
+            </div>
+
+            <div class="btn-group" style="margin-top:16px">
+                <button class="btn btn-primary btn-sm" id="wa-btn-connect" onclick="conectarWhatsApp()">Conectar WhatsApp</button>
+                <button class="btn btn-secondary btn-sm" id="wa-btn-groups" onclick="listarGruposWhatsApp()" style="display:none">Selecionar Grupo</button>
+                <button class="btn btn-danger btn-sm" id="wa-btn-disconnect" onclick="desconectarWhatsApp()" style="display:none">Desconectar</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 class="settings-title">Instagram</h3>
+            <p class="settings-desc">Credenciais da Graph API para publicacao no Instagram Feed e Stories.</p>
+            <div class="form-grid">
+                <div class="form-group"><label>Access Token</label><input type="password" id="cred-instagram-access_token" placeholder="Token de acesso"></div>
+                <div class="form-group"><label>User ID</label><input type="text" id="cred-instagram-user_id" placeholder="ID do usuario Instagram"></div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary btn-sm" onclick="salvarCredencial('instagram', ['access_token','user_id'])">Salvar Instagram</button>
+                <button class="btn btn-danger btn-sm" onclick="removerCredencial('instagram')">Remover</button>
+            </div>
+        </div>
+
+        <div id="settings-status-msg" class="tg-status" style="margin-top:16px"></div>
+    </div>
+
+</div>
+
+<!-- Multi-Channel Publishing Modal -->
+<div class="publish-modal-overlay" id="publish-modal-overlay" onclick="if(event.target===this)fecharPublishModal()">
+    <div class="publish-modal">
+        <h3>&#128227; Compartilhar nas Redes</h3>
+
+        <!-- Product summary -->
+        <div style="display:flex;gap:12px;align-items:start;margin-bottom:16px">
+            <img id="pub-prod-img" src="" alt="" style="width:70px;height:70px;object-fit:cover;border-radius:8px">
+            <div>
+                <strong id="pub-prod-name"></strong>
+                <div id="pub-prod-preco" style="margin-top:4px"></div>
+                <div id="pub-prod-link" style="font-size:11px;color:var(--text-secondary);margin-top:4px;word-break:break-all"></div>
+            </div>
+        </div>
+
+        <!-- Channel selection -->
+        <div style="margin-bottom:16px">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Canais de publicacao</label>
+            <div class="channel-selector" id="channel-selector">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Per-channel tabs -->
+        <div class="channel-tabs" id="channel-tabs"></div>
+
+        <!-- Preview area -->
+        <div class="tg-preview" id="channel-preview-text" style="min-height:60px;color:var(--text-secondary)">
+            Selecione os canais e clique em "Gerar com IA"
+        </div>
+
+        <!-- Text editor -->
+        <div style="margin-top:12px">
+            <label style="font-size:13px;font-weight:500;display:block;margin-bottom:6px">Editar texto antes de enviar:</label>
+            <textarea id="channel-manual-text" placeholder="O anuncio gerado pela IA aparecera aqui. Voce pode editar antes de enviar."></textarea>
+        </div>
+
+        <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn-primary btn-sm" id="pub-btn-preview" onclick="gerarPreviewCanais()">&#x21BA; Gerar com IA</button>
+        </div>
+
+        <div id="publish-status-msg" class="tg-status"></div>
+
+        <div class="btn-group" style="margin-top:16px;justify-content:flex-end">
+            <button class="btn btn-secondary btn-sm" onclick="fecharPublishModal()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" id="pub-btn-enviar" onclick="publicarNosCanais()">&#128227; Publicar</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
