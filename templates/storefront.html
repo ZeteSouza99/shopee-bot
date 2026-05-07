@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if user %}
+    <title>{{ user.display_name or user.email.split('@')[0] }} — Promoções</title>
+    <meta name="description" content="Confira as melhores promoções e ofertas selecionadas por {{ user.display_name or user.email.split('@')[0] }}.">
+    <meta property="og:title" content="{{ user.display_name or user.email.split('@')[0] }} — Promoções">
+    <meta property="og:description" content="Ofertas e promoções selecionadas com carinho. Clique e aproveite!">
+    <meta property="og:type" content="website">
+    {% else %}
+    <title>Página não encontrada — AffiliateHub</title>
+    {% endif %}
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #6C5CE7;
+            --primary-dark: #5A4BD1;
+            --bg: #0F0F14;
+            --card-bg: #16161D;
+            --text: #E8E8EF;
+            --text-secondary: rgba(255,255,255,0.45);
+            --border: rgba(255,255,255,0.06);
+            --badge-bg: rgba(108,92,231,0.12);
+            --badge-text: #A78BFA;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .sf-header {
+            background: linear-gradient(135deg, #1C1C26 0%, #16161D 100%);
+            color: white;
+            padding: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .sf-header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .sf-avatar {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #6C5CE7, #00CEC9);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 700; color: white;
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.15);
+        }
+        .sf-header-text h1 {
+            font-size: 22px; font-weight: 700; line-height: 1.2;
+        }
+        .sf-header-text p {
+            font-size: 13px; opacity: 0.85; margin-top: 3px;
+        }
+        .sf-shopee-badge {
+            margin-left: auto;
+            background: rgba(108,92,231,0.15);
+            color: #A78BFA;
+            border: 1px solid rgba(108,92,231,0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .sf-shopee-badge:hover { background: rgba(108,92,231,0.25); }
+
+        /* Stats bar */
+        .sf-stats {
+            background: #16161D;
+            border-bottom: 1px solid var(--border);
+        }
+        .sf-stats-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .sf-stats-inner strong { color: var(--text); }
+
+        /* Main content */
+        .sf-main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+
+        /* Empty / not found state */
+        .sf-empty {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .sf-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        .sf-empty h2 {
+            font-size: 22px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .sf-empty p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        /* Product Grid */
+        .sf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .sf-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: box-shadow 0.18s, transform 0.18s;
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            color: inherit;
+        }
+        .sf-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .sf-card-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: #1C1C26;
+        }
+        .sf-card-img-placeholder {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #1C1C26 0%, #252530 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: rgba(255,255,255,0.15);
+        }
+
+        .sf-card-body {
+            padding: 12px 14px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .sf-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--text);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sf-card-price-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .sf-price {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .sf-discount-badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        .sf-card-category {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .sf-card-footer {
+            padding: 10px 14px 14px;
+        }
+
+        .sf-btn {
+            display: block;
+            width: 100%;
+            padding: 9px 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .sf-btn:hover { box-shadow: 0 4px 15px rgba(108,92,231,0.35); }
+
+        /* Footer */
+        .sf-footer {
+            text-align: center;
+            padding: 32px 20px;
+            background: #16161D;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .sf-footer a { color: var(--primary); text-decoration: none; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .sf-header-inner { flex-wrap: wrap; }
+            .sf-shopee-badge { margin-left: 0; }
+            .sf-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="sf-header">
+    <div class="sf-header-inner">
+        {% if user %}
+        <div class="sf-avatar">
+            {{ (user.display_name or user.email)[0].upper() }}
+        </div>
+        <div class="sf-header-text">
+            <h1>{{ user.display_name or user.email.split('@')[0] }}</h1>
+            <p>Promoções e ofertas selecionadas</p>
+        </div>
+        <a href="https://shopee.com.br" target="_blank" rel="noopener" class="sf-shopee-badge">
+            � Shopee
+        </a>
+        {% else %}
+        <div class="sf-header-text">
+            <h1>AffiliateHub</h1>
+        </div>
+        {% endif %}
+    </div>
+</header>
+
+{% if user and promotions %}
+<div class="sf-stats">
+    <div class="sf-stats-inner">
+        <strong>{{ promotions|length }}</strong>&nbsp;
+        {{ 'oferta disponível' if promotions|length == 1 else 'ofertas disponíveis' }}
+        &nbsp;·&nbsp; Atualizado automaticamente
+    </div>
+</div>
+{% endif %}
+
+<main class="sf-main">
+    {% if not user %}
+    <div class="sf-empty">
+        <div class="sf-empty-icon">🔍</div>
+        <h2>Página não encontrada</h2>
+        <p>O link que você acessou não existe ou foi removido.</p>
+    </div>
+
+    {% elif not promotions %}
+    <div class="sf-empty">
+        <div class="sf-empty-icon">🏷️</div>
+        <h2>Nenhuma promoção ainda</h2>
+        <p>{{ user.display_name or user.email.split('@')[0] }} ainda não publicou ofertas aqui.<br>Volte em breve!</p>
+    </div>
+
+    {% else %}
+    <div class="sf-grid">
+        {% for promo in promotions %}
+        <a class="sf-card" href="{{ promo.shortLink }}" target="_blank" rel="noopener sponsored">
+            {% if promo.imageUrl %}
+            <img class="sf-card-img" src="{{ promo.imageUrl }}" alt="{{ promo.title }}" loading="lazy">
+            {% else %}
+            <div class="sf-card-img-placeholder">🛍</div>
+            {% endif %}
+            <div class="sf-card-body">
+                {% if promo.category %}
+                <div class="sf-card-category">{{ promo.category }}</div>
+                {% endif %}
+                <div class="sf-card-title">{{ promo.title }}</div>
+                <div class="sf-card-price-row">
+                    {% if promo.priceMin %}gmail
+                    <span class="sf-price">R$ {{ promo.priceMin }}</span>
+                    {% endif %}
+                    {% if promo.commissionRate %}
+                    <span class="sf-discount-badge">{{ promo.commissionRate }}% comissão</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="sf-card-footer">
+                <span class="sf-btn">Ver oferta →</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</main>
+
+<footer class="sf-footer">
+    <p>Criado com <strong>AffiliateHub</strong> · Links de afiliado</p>
+</footer>
+
+</body>
+</html>

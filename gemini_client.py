@@ -1,5 +1,5 @@
 """
-Cliente para a API Google Gemini.
+Cliente para a API Google Gemini (LLM).
 
 Gera textos de anuncio a partir de dados de produto para publicacao em redes sociais.
 Suporta prompts especificos por canal (Telegram, WhatsApp, Instagram Feed/Stories).
@@ -12,119 +12,173 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+MODEL = "gemini-2.5-flash-lite"
 MAX_RETRIES = 3
+
+# Contexto base compartilhado por todos os canais
+_BASE_SYSTEM = (
+    "Voce e um especialista em criar anuncios de ofertas para afiliados da Shopee no Brasil. "
+    "Cria anuncios limpos, diretos e profissionais no estilo vitrine de ofertas. "
+    "O formato deve ser: emoji relacionado ao produto + nome do produto, "
+    "preco original riscado, preco promocional em destaque, parcelas se aplicavel, "
+    "link de compra e aviso de promocao sujeita a alteracao. "
+    "NAO invente informacoes que nao foram fornecidas. "
+    "NAO mencione numero de vendas nem avaliacao por estrelas. "
+    "NAO escreva textos longos nem narrativas — seja direto e objetivo."
+)
 
 # Prompts por canal
 CHANNEL_PROMPTS = {
     "telegram": {
-        "system": (
-            "Voce e um Expert em Marketing Digital com mais de 10 anos de experiencia em "
-            "vendas online, copywriting e gestao de canais no Telegram. "
-            "Seu especialidade e criar anuncios altamente persuasivos que geram cliques e conversoes imediatas. "
-            "Voce domina gatilhos mentais como escassez, prova social, urgencia e ancoragem de preco. "
-            "Seus textos sao diretos, envolventes e adaptados ao publico brasileiro que busca ofertas e descontos."
-        ),
+        "system": _BASE_SYSTEM,
         "instructions": (
-            "- Use gatilhos mentais (urgencia, prova social, escassez, ancoragem de preco)\n"
-            "- Emojis estrategicos para chamar atencao (maximo 4-5 emojis no total)\n"
-            "- Destaque o desconto e o preco final com destaque visual\n"
-            "- Texto direto, sem enrolacao — o leitor decide em segundos\n"
-            "- O link de compra deve aparecer no final em linha separada\n"
-            "- NAO mencione numero de vendas nem avaliacao por estrelas\n"
-            "- NAO invente informacoes que nao foram fornecidas\n"
+            "Formato EXATO (use este layout):\n"
+            "[emoji relacionado] [Nome do Produto]\n"
+            "\n"
+            "~de R$ [preco original]~\n"
+            "por R$ [preco promocional] [emoji fogo]\n"
+            "\n"
+            "Compre aqui: [link]\n"
+            "\n"
+            "_*Promocao sujeita a alteracao a qualquer momento_\n"
+            "\n"
+            "REGRAS:\n"
+            "- Use 1 emoji relacionado ao produto no inicio (ex: panela=🍳, celular=📱, roupa=👕)\n"
+            "- Preco original com ~til~ para riscar\n"
+            "- Preco promocional em destaque\n"
+            "- Se o desconto for grande (acima de 30%), adicione uma linha com parcelas estimadas\n"
             "- NAO use hashtags\n"
-            "- Maximo 300 caracteres no texto (sem contar o link)"
+            "- NAO escreva textos narrativos, seja direto"
         ),
         "max_tokens": 300,
         "canal_label": "um canal de ofertas no Telegram",
     },
     "whatsapp": {
-        "system": (
-            "Voce e um Expert em Marketing Digital especializado em vendas por WhatsApp. "
-            "Cria mensagens persuasivas e conversacionais, como se estivesse recomendando a um amigo proximo. "
-            "Domina gatilhos mentais e usa a formatacao nativa do WhatsApp (*negrito*, _italico_) para impacto visual. "
-            "Seus textos sao adaptados ao publico brasileiro que busca ofertas e descontos."
-        ),
+        "system": _BASE_SYSTEM,
         "instructions": (
-            "- Use *negrito* para destacar precos e descontos (formatacao WhatsApp)\n"
-            "- Tom conversacional, como recomendar a um amigo\n"
-            "- Emojis estrategicos (maximo 5-6 emojis)\n"
-            "- Destaque o desconto e o preco final\n"
-            "- O link de compra deve aparecer no final em linha separada\n"
-            "- NAO mencione numero de vendas nem avaliacao por estrelas\n"
-            "- NAO invente informacoes que nao foram fornecidas\n"
+            "Formato EXATO (use este layout com formatacao WhatsApp):\n"
+            "[emoji relacionado] [Nome do Produto]\n"
+            "\n"
+            "~de R$ [preco original]~\n"
+            "🏷️ por *R$ [preco promocional]* 🔥\n"
+            "💳 ou [X]x de R$ [valor parcela] sem juros\n"
+            "\n"
+            "Compre aqui: [link]\n"
+            "\n"
+            "_*Promocao sujeita a alteracao a qualquer momento_\n"
+            "\n"
+            "REGRAS:\n"
+            "- Use 1 emoji relacionado ao produto no inicio (ex: panela=🍳, celular=📱, fone=🎧)\n"
+            "- Use ~til~ para riscar o preco original (formatacao WhatsApp)\n"
+            "- Use *asterisco* para negrito no preco promocional\n"
+            "- Calcule parcelas em 2x ou 3x sem juros (divida o preco por 2 ou 3)\n"
+            "- Use _italico_ no aviso final\n"
             "- NAO use hashtags\n"
-            "- Maximo 350 caracteres no texto (sem contar o link)"
+            "- NAO escreva textos narrativos, seja direto e limpo"
         ),
-        "max_tokens": 350,
+        "max_tokens": 300,
         "canal_label": "um grupo de ofertas no WhatsApp",
     },
     "instagram_feed": {
-        "system": (
-            "Voce e um Expert em Marketing Digital especializado em Instagram. "
-            "Cria legendas envolventes que geram engajamento e salvamentos. "
-            "Domina o uso de hashtags estrategicas e CTAs que direcionam ao link na bio. "
-            "Seus textos sao adaptados ao publico brasileiro que busca ofertas e descontos."
-        ),
+        "system": _BASE_SYSTEM,
         "instructions": (
-            "- Comece com uma frase de impacto que pare o scroll\n"
-            "- Use emojis estrategicamente (6-8 emojis)\n"
-            "- Inclua 5-10 hashtags relevantes ao final (#ofertas #shopee #desconto etc.)\n"
-            "- NAO inclua o link (Instagram nao permite links clicaveis no caption)\n"
-            "- Termine com CTA: 'Link na bio!' ou 'Acesse o link nos stories!'\n"
-            "- NAO mencione numero de vendas nem avaliacao por estrelas\n"
-            "- NAO invente informacoes que nao foram fornecidas\n"
-            "- Maximo 400 caracteres no texto principal (sem contar hashtags)"
+            "Formato EXATO (use este layout para legenda de post):\n"
+            "[emoji relacionado] [Nome do Produto]\n"
+            "\n"
+            "De R$ [preco original] ❌\n"
+            "🏷️ Por R$ [preco promocional] 🔥\n"
+            "💳 ou [X]x de R$ [valor parcela] sem juros\n"
+            "\n"
+            "🛒 Link na bio!\n"
+            "\n"
+            "⚠️ Promocao sujeita a alteracao a qualquer momento\n"
+            "\n"
+            "[8-12 hashtags relevantes como #shopee #oferta #desconto #promocao #acheinashopee]\n"
+            "\n"
+            "REGRAS:\n"
+            "- Use 1 emoji relacionado ao produto no inicio\n"
+            "- NAO inclua link direto (Instagram nao permite links clicaveis no caption)\n"
+            "- Inclua hashtags relevantes ao final\n"
+            "- Seja direto e limpo, sem textos narrativos"
         ),
-        "max_tokens": 500,
+        "max_tokens": 350,
         "canal_label": "um post no Instagram Feed",
     },
     "instagram_stories": {
-        "system": (
-            "Voce e um Expert em Marketing Digital especializado em Instagram Stories. "
-            "Cria textos ultra-curtos e impactantes que geram urgencia imediata. "
-            "Seus textos sao punchlines que fazem o usuario deslizar para cima ou clicar no link. "
-            "Adaptado ao publico brasileiro que busca ofertas."
-        ),
+        "system": _BASE_SYSTEM,
         "instructions": (
-            "- Texto MUITO curto e impactante (maximo 100 caracteres)\n"
-            "- Use 2-3 emojis no maximo\n"
-            "- Gatilho de urgencia forte\n"
-            "- NAO inclua link nem hashtags (o link vai no sticker)\n"
-            "- Formato ideal: Frase de impacto + preco\n"
-            "- NAO mencione numero de vendas nem avaliacao por estrelas\n"
-            "- NAO invente informacoes que nao foram fornecidas"
+            "Formato EXATO (texto curto para Stories):\n"
+            "[emoji relacionado] [Nome curto do Produto]\n"
+            "\n"
+            "De R$ [preco original] ❌\n"
+            "Por R$ [preco promocional] 🔥\n"
+            "\n"
+            "🛒 Arraste para cima!\n"
+            "\n"
+            "REGRAS:\n"
+            "- Texto MUITO curto (maximo 100 caracteres)\n"
+            "- Use o nome resumido do produto\n"
+            "- NAO inclua link, hashtags nem aviso\n"
+            "- Seja extremamente direto"
         ),
         "max_tokens": 150,
-        "canal_label": "um Story no Instagram",
+        "canal_label": "um Story/Reels no Instagram",
     },
 }
 
 
-def gerar_anuncio(produto: dict, canal: str = "telegram", api_key: str = "") -> str:
+def gerar_anuncio(produto: dict, canal: str = "telegram", api_key: str = "", custom_template: str = None) -> str:
     """
-    Usa o Gemini para criar um texto de anuncio persuasivo.
+    Gera texto de anuncio para publicacao em redes sociais.
+
+    Se custom_template fornecido, faz substituicao de variaveis sem chamar a IA.
+    Variaveis disponiveis: {{productName}}, {{priceMin}}, {{priceMax}},
+    {{priceDiscountRate}}, {{commission}}, {{commissionRate}}, {{shopName}},
+    {{shortLink}}, {{offerLink}}.
 
     Args:
-        produto: Dicionario com dados do produto (nome, preco, desconto, link, etc).
-        canal: Nome do canal de destino ('telegram', 'whatsapp', 'instagram_feed', 'instagram_stories').
-        api_key: Chave de API do Gemini do usuario.
+        produto: Dicionario com dados do produto.
+        canal: Nome do canal de destino.
+        api_key: Chave de API do Gemini.
+        custom_template: Template com variaveis {{campo}} para substituicao direta.
 
     Returns:
         Texto do anuncio pronto para publicacao.
     """
-    if not api_key:
-        raise ValueError("Chave da API Gemini nao configurada. Acesse Configuracoes.")
-
-    channel_config = CHANNEL_PROMPTS.get(canal, CHANNEL_PROMPTS["telegram"])
-
     nome = produto.get("productName") or produto.get("shopName") or produto.get("offerName") or "Produto"
     preco_min = produto.get("priceMin", "")
     preco_max = produto.get("priceMax", "")
     desconto = produto.get("priceDiscountRate", "")
     loja = produto.get("shopName", "")
     link = produto.get("shortLink") or produto.get("_shortLink") or produto.get("offerLink") or produto.get("productLink", "")
+
+    # Se template customizado fornecido, substituir variaveis e retornar
+    if custom_template:
+        template_vars = {
+            "productName": nome,
+            "priceMin": f"R$ {preco_min}" if preco_min else "",
+            "priceMax": f"R$ {preco_max}" if preco_max else "",
+            "priceDiscountRate": f"{desconto}%" if desconto else "",
+            "commission": produto.get("commission", ""),
+            "commissionRate": f"{produto.get('commissionRate', '')}%" if produto.get("commissionRate") else "",
+            "shopName": loja,
+            "shortLink": link,
+            "offerLink": produto.get("offerLink") or produto.get("productLink", ""),
+        }
+        try:
+            result = custom_template
+            for key, value in template_vars.items():
+                result = result.replace("{{" + key + "}}", str(value) if value else "")
+            logger.info("Anuncio gerado via template customizado (canal: %s)", canal)
+            return result.strip()
+        except Exception as e:
+            logger.warning("Erro ao aplicar template customizado, usando IA: %s", e)
+
+    if not api_key:
+        raise ValueError("Chave da API Gemini nao configurada. Acesse Configuracoes.")
+
+    channel_config = CHANNEL_PROMPTS.get(canal, CHANNEL_PROMPTS["telegram"])
 
     # Calcular preco original se houver desconto
     preco_info = ""
@@ -155,22 +209,30 @@ INSTRUCOES:
 Responda APENAS com o texto do anuncio pronto para publicar, sem explicacoes ou comentarios."""
 
     payload = {
-        "systemInstruction": {"parts": [{"text": system_instruction}]},
-        "contents": [{"parts": [{"text": prompt}]}],
+        "system_instruction": {
+            "parts": [{"text": system_instruction}]
+        },
+        "contents": [
+            {"parts": [{"text": prompt}]}
+        ],
         "generationConfig": {
             "temperature": 0.9,
             "maxOutputTokens": channel_config["max_tokens"],
         },
     }
 
-    logger.info("Gerando anuncio via Gemini para canal '%s': %s", canal, nome[:50])
+    url = API_URL.format(model=MODEL)
+
+    logger.info("Gerando anuncio via Gemini (%s) para canal '%s': %s", MODEL, canal, nome[:50])
 
     last_error = None
     for attempt in range(MAX_RETRIES):
         try:
             response = requests.post(
-                f"{API_URL}?key={api_key}",
+                url,
                 json=payload,
+                params={"key": api_key},
+                headers={"Content-Type": "application/json"},
                 timeout=30,
             )
             if response.status_code == 429:

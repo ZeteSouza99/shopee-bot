@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - AffiliateHub</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        :root { --bg:#0A0A0F; --bg2:#111118; --bg3:#17171F; --border:rgba(255,255,255,0.06); --border-h:rgba(255,255,255,0.1); --text:#EEEEF2; --text2:#9494AC; --primary:#7C6EF6; --primary-h:#6558E3; --primary-rgb:124,110,246; --success:#00D68F; --danger:#F87171; --warning:#FFB020; --cyan:#38BDF8; --pink:#ec4899; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+
+        .header{background:rgba(17,17,24,0.85);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+        .header h1{font-size:17px;font-weight:700;letter-spacing:-0.3px} .header h1 span{background:linear-gradient(135deg,var(--primary),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .header-links{display:flex;gap:10px} .header-links a{color:var(--text2);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:8px;transition:.15s;border:1px solid transparent} .header-links a:hover{background:var(--bg3);color:var(--text);border-color:var(--border-h)}
+
+        .tabs{display:flex;gap:4px;padding:10px 24px;background:var(--bg2);border-bottom:1px solid var(--border)}
+        .tab{padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border:none;background:none;transition:.15s} .tab:hover{background:var(--bg3);color:var(--text)} .tab.active{background:var(--primary);color:#fff}
+
+        .content{max-width:1280px;margin:0 auto;padding:20px 24px}
+        .tab-panel{display:none} .tab-panel.active{display:block}
+
+        /* Grid */
+        .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+        .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+        .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+
+        /* Cards */
+        .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+        .card-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+        .card-value{font-size:26px;font-weight:700;line-height:1.2}
+        .card-sub{font-size:11px;color:var(--text2);margin-top:4px}
+        .card-value.blue{color:var(--primary)} .card-value.green{color:var(--success)} .card-value.red{color:var(--danger)} .card-value.yellow{color:var(--warning)} .card-value.cyan{color:var(--cyan)} .card-value.pink{color:var(--pink)}
+
+        /* Section */
+        .section{margin-bottom:20px}
+        .section-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+
+        /* Bar chart */
+        .bar-chart{display:flex;align-items:flex-end;gap:8px;height:100px;padding:8px 0}
+        .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+        .bar{width:100%;background:var(--primary);border-radius:4px 4px 0 0;min-height:4px;transition:height .3s}
+        .bar-label{font-size:10px;color:var(--text2)}
+        .bar-val{font-size:11px;font-weight:600}
+
+        /* Channel cards */
+        .ch-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+        .ch-icon{font-size:24px;margin-bottom:6px}
+        .ch-name{font-size:12px;color:var(--text2);margin-bottom:4px}
+        .ch-count{font-size:28px;font-weight:700}
+        .ch-bar{height:4px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden}
+        .ch-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+
+        /* Mini table */
+        .mini-table{width:100%}
+        .mini-table th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);border-bottom:1px solid var(--border)}
+        .mini-table td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--border)}
+        .mini-table tr:hover td{background:rgba(255,255,255,.02)}
+
+        /* Users table */
+        .table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+        .table-header h2{font-size:15px;font-weight:600}
+        .search-input{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:13px;width:260px;outline:none} .search-input:focus{border-color:var(--primary)}
+        .users-table{width:100%;border-collapse:collapse}
+        .users-table th{text-align:left;padding:9px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);background:var(--bg2);border-bottom:1px solid var(--border)}
+        .users-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border)}
+        .users-table tr:hover td{background:var(--bg2)}
+
+        .badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+        .badge-admin{background:rgba(99,102,241,.15);color:var(--primary)}
+        .badge-active{background:rgba(34,197,94,.15);color:var(--success)}
+        .badge-blocked{background:rgba(239,68,68,.15);color:var(--danger)}
+
+        .btn{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text);transition:.15s} .btn:hover{background:var(--bg2);border-color:var(--text2)}
+        .btn-danger{border-color:var(--danger);color:var(--danger)} .btn-danger:hover{background:var(--danger);color:#fff}
+        .btn-success{border-color:var(--success);color:var(--success)} .btn-success:hover{background:var(--success);color:#fff}
+        .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)} .btn-primary:hover{background:var(--primary-h)}
+        .actions-cell{display:flex;gap:5px}
+
+        .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12px;color:var(--text2)}
+        .pagination-btns{display:flex;gap:5px}
+
+        /* Status dot */
+        .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+        .dot-green{background:var(--success)} .dot-red{background:var(--danger)} .dot-yellow{background:var(--warning)} .dot-gray{background:var(--text2)}
+
+        /* Modal */
+        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:200;justify-content:center;align-items:center} .modal-overlay.active{display:flex}
+        .modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;max-width:480px;max-height:80vh;overflow-y:auto}
+        .modal h3{font-size:15px;margin-bottom:14px}
+        .modal-close{float:right;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer}
+        .modal-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px} .modal-row .label{color:var(--text2)}
+        .modal-actions{margin-top:14px;display:flex;gap:6px;flex-wrap:wrap}
+
+        /* Info row */
+        .info-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+        .info-row .label{color:var(--text2);min-width:100px}
+
+        .loading{text-align:center;padding:30px;color:var(--text2)}
+
+        /* Placeholders futuros */
+        .placeholder-card{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;color:var(--text2)}
+        .placeholder-card .ph-title{font-size:13px;font-weight:600;margin-bottom:4px}
+        .placeholder-card .ph-sub{font-size:11px;opacity:.7}
+
+        @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)} .grid-3{grid-template-columns:1fr}}
+        @media(max-width:600px){.grid-4,.grid-2{grid-template-columns:1fr} .search-input{width:100%} .table-header{flex-direction:column;gap:10px}}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1><span>Admin</span> AffiliateHub</h1>
+        <div class="header-links">
+            <a href="/">Voltar ao App</a>
+            <a href="/api/auth/logout">Sair</a>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+        <button class="tab" onclick="switchTab('subscriptions',this)">Assinaturas</button>
+        <button class="tab" onclick="switchTab('users',this)">Usuarios</button>
+        <button class="tab" onclick="switchTab('system',this)">Sistema</button>
+    </nav>
+
+    <main class="content">
+        <!-- ═══ DASHBOARD ═══ -->
+        <div id="tab-dashboard" class="tab-panel active">
+            <div id="dash-content"><div class="loading">Carregando dashboard...</div></div>
+        </div>
+
+        <!-- ═══ ASSINATURAS ═══ -->
+        <div id="tab-subscriptions" class="tab-panel">
+            <div id="subs-content"><div class="loading">Carregando assinaturas...</div></div>
+        </div>
+
+        <!-- ═══ USUARIOS ═══ -->
+        <div id="tab-users" class="tab-panel">
+            <div class="table-header">
+                <h2>Todos os Usuarios</h2>
+                <input type="text" class="search-input" id="user-search" placeholder="Pesquisar por email..." oninput="searchDebounced()">
+            </div>
+            <div id="users-table-container"><div class="loading">Carregando...</div></div>
+        </div>
+
+        <!-- ═══ SISTEMA ═══ -->
+        <div id="tab-system" class="tab-panel">
+            <div class="section">
+                <div class="section-title">Status do Sistema</div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title">Servidor</div>
+                        <div style="display:flex;align-items:center;gap:6px"><span class="dot dot-green"></span><span style="font-size:13px">Online</span></div>
+                        <div class="card-sub">Hostinger KVM 2 - 2 vCPU / 8 GB</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Banco de Dados</div>
+                        <div style="display:flex;align-items:center;gap:6px"><span class="dot dot-green"></span><span style="font-size:13px">PostgreSQL 16</span></div>
+                        <div class="card-sub">Connection Pool: 2-20 conexoes</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">IA (Gemini)</div>
+                        <div style="display:flex;align-items:center;gap:6px"><span class="dot dot-green"></span><span style="font-size:13px">gemini-2.5-flash-lite</span></div>
+                        <div class="card-sub">4.000 RPM / Ilimitado RPD</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-title">Integracao de Pagamentos</div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title">Gateway</div>
+                        <div style="display:flex;align-items:center;gap:6px"><span class="dot dot-green"></span><span style="font-size:13px">Mercado Pago</span></div>
+                        <div class="card-sub">PIX - Pagamento instantaneo</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Webhook</div>
+                        <div style="display:flex;align-items:center;gap:6px"><span class="dot dot-green"></span><span style="font-size:13px">Ativo</span></div>
+                        <div class="card-sub">/api/webhooks/mercadopago</div>
+                    </div>
+                    <div class="placeholder-card">
+                        <div class="ph-title">Logs & Auditoria</div>
+                        <div class="ph-sub">Em breve</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- User Detail Modal -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h3 id="modal-title">Detalhes do Usuario</h3>
+            <div id="modal-body"></div>
+            <div class="modal-actions" id="modal-actions"></div>
+        </div>
+    </div>
+
+<script>
+let currentPage = 0;
+const PS = 20;
+let searchTO = null;
+
+function switchTab(tab, el) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    el.classList.add('active');
+    if (tab === 'dashboard') loadDash();
+    if (tab === 'subscriptions') loadSubs();
+    if (tab === 'users') { currentPage = 0; loadUsers(); }
+}
+
+// ═══ DASHBOARD ═══
+async function loadDash() {
+    try {
+        const r = await fetch('/api/admin/stats');
+        const d = await r.json();
+        const u = d.users, ch = d.channels, us = d.usage;
+
+        const maxSignup = Math.max(1, ...d.signups_daily.map(s => s.count));
+        const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+        const today = new Date();
+
+        let barsHtml = d.signups_daily.map(s => {
+            const dt = new Date(today);
+            dt.setDate(dt.getDate() - s.day);
+            const pct = (s.count / maxSignup) * 100;
+            return `<div class="bar-col">
+                <div class="bar-val">${s.count}</div>
+                <div class="bar" style="height:${Math.max(4, pct)}%"></div>
+                <div class="bar-label">${days[dt.getDay()]}</div>
+            </div>`;
+        }).join('');
+
+        let recentHtml = d.recent_users.map(r => {
+            const dt = r.created_at ? new Date(r.created_at * 1000).toLocaleDateString('pt-BR') : '-';
+            const ll = r.last_login ? timeAgo(r.last_login) : '<span style="color:var(--warning)">Nunca</span>';
+            return `<tr><td>${r.email}</td><td>${dt}</td><td>${ll}</td></tr>`;
+        }).join('');
+
+        let topHtml = d.top_users.map(r =>
+            `<tr><td>${r.email}</td><td style="text-align:right;font-weight:600">${r.total_searches}</td></tr>`
+        ).join('');
+
+        const totalCh = u.total_favoritas + u.total_historico + u.total_promotions + u.total_templates;
+
+        document.getElementById('dash-content').innerHTML = `
+            <!-- KPIs principais -->
+            <div class="grid-4">
+                <div class="card">
+                    <div class="card-title">Total de Usuarios</div>
+                    <div class="card-value blue">${u.total}</div>
+                    <div class="card-sub">+${u.new_today} hoje / +${u.new_week} na semana</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Online Agora</div>
+                    <div class="card-value green">${u.active_now}</div>
+                    <div class="card-sub">${u.active_today} ativos hoje / ${u.active_week} na semana</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Bloqueados</div>
+                    <div class="card-value red">${u.blocked}</div>
+                    <div class="card-sub">${u.never_logged} nunca logaram</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Admins</div>
+                    <div class="card-value cyan">${u.admins}</div>
+                    <div class="card-sub">Contas com acesso admin</div>
+                </div>
+            </div>
+
+            <!-- Canais + Grafico -->
+            <div class="grid-2">
+                <!-- Canais -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:12px">Canais Integrados (${ch.total_configs} configuracoes)</div>
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                        ${channelRow('Telegram', ch.telegram, u.total, 'var(--cyan)')}
+                        ${channelRow('WhatsApp', ch.whatsapp, u.total, 'var(--success)')}
+                        ${channelRow('Instagram', ch.instagram, u.total, 'var(--pink)')}
+                        ${channelRow('Shopee API', ch.shopee, u.total, 'var(--warning)')}
+                    </div>
+                </div>
+                <!-- Grafico cadastros -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:8px">Novos cadastros (7 dias) - Total: +${u.new_week}</div>
+                    <div class="bar-chart">${barsHtml}</div>
+                </div>
+            </div>
+
+            <!-- Uso da plataforma -->
+            <div class="section">
+                <div class="section-title">Uso da Plataforma</div>
+                <div class="grid-4">
+                    <div class="card" style="text-align:center">
+                        <div class="card-title">Lojas Favoritas</div>
+                        <div class="card-value">${us.total_favoritas}</div>
+                    </div>
+                    <div class="card" style="text-align:center">
+                        <div class="card-title">Pesquisas (Historico)</div>
+                        <div class="card-value">${us.total_historico}</div>
+                    </div>
+                    <div class="card" style="text-align:center">
+                        <div class="card-title">Promocoes</div>
+                        <div class="card-value">${us.total_promotions}</div>
+                        <div class="card-sub">${us.active_promotions} ativas</div>
+                    </div>
+                    <div class="card" style="text-align:center">
+                        <div class="card-title">Templates</div>
+                        <div class="card-value">${us.total_templates}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabelas lado a lado -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:10px">Ultimos Cadastros</div>
+                    <table class="mini-table">
+                        <thead><tr><th>Email</th><th>Cadastro</th><th>Ultimo acesso</th></tr></thead>
+                        <tbody>${recentHtml || '<tr><td colspan="3" style="text-align:center;color:var(--text2)">Nenhum usuario</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:10px">Usuarios Mais Ativos</div>
+                    <table class="mini-table">
+                        <thead><tr><th>Email</th><th style="text-align:right">Pesquisas</th></tr></thead>
+                        <tbody>${topHtml || '<tr><td colspan="2" style="text-align:center;color:var(--text2)">Sem dados</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Financeiro -->
+            <div class="section" style="margin-top:20px">
+                <div class="section-title">Financeiro</div>
+                <div class="grid-4">
+                    <div class="card">
+                        <div class="card-title">MRR</div>
+                        <div class="card-value green" id="kpi-mrr">R$ 0</div>
+                        <div class="card-sub">Receita recorrente mensal</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Receita Mes</div>
+                        <div class="card-value blue" id="kpi-rev-month">R$ 0</div>
+                        <div class="card-sub">Pagamentos aprovados (30d)</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Churn</div>
+                        <div class="card-value yellow" id="kpi-churn">0%</div>
+                        <div class="card-sub">Taxa de cancelamento mensal</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Conversao Trial</div>
+                        <div class="card-value cyan" id="kpi-conversion">0%</div>
+                        <div class="card-sub">Trial para pagante</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Preencher KPIs financeiros com dados ja carregados
+        if (d.financial) {
+            const f = d.financial;
+            const el = id => document.getElementById(id);
+            if (el('kpi-mrr')) el('kpi-mrr').textContent = 'R$ ' + (f.mrr_cents / 100).toFixed(2).replace('.', ',');
+            if (el('kpi-rev-month')) el('kpi-rev-month').textContent = 'R$ ' + (f.revenue_month_cents / 100).toFixed(2).replace('.', ',');
+            if (el('kpi-churn')) el('kpi-churn').textContent = f.churn_rate + '%';
+            if (el('kpi-conversion')) el('kpi-conversion').textContent = f.conversion_rate + '%';
+        }
+    } catch (e) {
+        document.getElementById('dash-content').innerHTML = '<div class="loading">Erro ao carregar dashboard</div>';
+    }
+}
+
+function channelRow(name, count, total, color) {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    return `<div style="display:flex;align-items:center;gap:10px">
+        <span style="min-width:80px;font-size:12px;color:var(--text2)">${name}</span>
+        <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px"></div>
+        </div>
+        <span style="min-width:50px;text-align:right;font-size:13px;font-weight:600">${count}</span>
+        <span style="font-size:11px;color:var(--text2)">${pct}%</span>
+    </div>`;
+}
+
+function timeAgo(ts) {
+    const diff = Math.floor(Date.now() / 1000) - ts;
+    if (diff < 60) return 'agora';
+    if (diff < 3600) return Math.floor(diff / 60) + 'min';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+    return Math.floor(diff / 86400) + 'd atras';
+}
+
+// ═══ SUBSCRIPTIONS ═══
+async function loadSubs() {
+    try {
+        const r = await fetch('/api/admin/stats');
+        const d = await r.json();
+        const s = d.subscriptions || {}, f = d.financial || {}, pd = d.plan_distribution || [];
+
+        let planDistHtml = pd.length > 0 ? pd.map(p =>
+            `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px">${p.name}</span>
+                <span style="font-weight:600;font-size:14px">${p.count} assinante${p.count!==1?'s':''}</span>
+            </div>`
+        ).join('') : '<div style="padding:16px;text-align:center;color:var(--text2)">Nenhuma assinatura ativa</div>';
+
+        document.getElementById('subs-content').innerHTML = `
+            <div class="grid-4">
+                <div class="card">
+                    <div class="card-title">Trial</div>
+                    <div class="card-value yellow">${s.trial || 0}</div>
+                    <div class="card-sub">${s.trials_expiring_soon || 0} expirando em 3 dias</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Ativas</div>
+                    <div class="card-value green">${s.active || 0}</div>
+                    <div class="card-sub">Assinaturas pagantes</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Expiradas</div>
+                    <div class="card-value red">${s.expired || 0}</div>
+                    <div class="card-sub">Nao renovaram</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Canceladas</div>
+                    <div class="card-value" style="color:var(--text2)">${s.cancelled || 0}</div>
+                    <div class="card-sub">Cancelamentos totais</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:12px">Metricas Financeiras</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                            <span style="color:var(--text2);font-size:13px">MRR (Receita Recorrente)</span>
+                            <span style="font-weight:700;color:var(--success)">R$ ${((f.mrr_cents||0)/100).toFixed(2).replace('.',',')}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                            <span style="color:var(--text2);font-size:13px">Receita Total</span>
+                            <span style="font-weight:700">R$ ${((f.total_revenue_cents||0)/100).toFixed(2).replace('.',',')}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                            <span style="color:var(--text2);font-size:13px">Receita Ultimos 30 dias</span>
+                            <span style="font-weight:700;color:var(--primary)">R$ ${((f.revenue_month_cents||0)/100).toFixed(2).replace('.',',')}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                            <span style="color:var(--text2);font-size:13px">Pagamentos Pendentes</span>
+                            <span style="font-weight:700;color:var(--warning)">${f.pending_payments || 0}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                            <span style="color:var(--text2);font-size:13px">Churn Rate</span>
+                            <span style="font-weight:700;color:var(--danger)">${f.churn_rate || 0}%</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0">
+                            <span style="color:var(--text2);font-size:13px">Conversao Trial → Pago</span>
+                            <span style="font-weight:700;color:var(--cyan)">${f.conversion_rate || 0}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:12px">Planos Mais Populares</div>
+                    ${planDistHtml}
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        document.getElementById('subs-content').innerHTML = '<div class="loading">Erro ao carregar</div>';
+    }
+}
+
+// ═══ USERS TABLE ═══
+function searchDebounced() { clearTimeout(searchTO); searchTO = setTimeout(() => { currentPage = 0; loadUsers(); }, 300); }
+
+async function loadUsers() {
+    const search = document.getElementById('user-search')?.value || '';
+    const offset = currentPage * PS;
+    try {
+        const r = await fetch(`/api/admin/users?search=${encodeURIComponent(search)}&limit=${PS}&offset=${offset}`);
+        const d = await r.json();
+        const tp = Math.ceil(d.total / PS);
+        if (d.users.length === 0) { document.getElementById('users-table-container').innerHTML = '<div class="loading">Nenhum usuario encontrado</div>'; return; }
+
+        let html = `<table class="users-table"><thead><tr><th>Email</th><th>Status</th><th>Cadastro</th><th>Ultimo Acesso</th><th>Acoes</th></tr></thead><tbody>`;
+        for (const u of d.users) {
+            const cr = u.created_at ? new Date(u.created_at * 1000).toLocaleDateString('pt-BR') : '-';
+            const ll = u.last_login ? new Date(u.last_login * 1000).toLocaleDateString('pt-BR') : 'Nunca';
+            let badges = '';
+            if (u.is_admin) badges += '<span class="badge badge-admin">Admin</span> ';
+            badges += u.is_blocked ? '<span class="badge badge-blocked">Bloqueado</span>' : '<span class="badge badge-active">Ativo</span>';
+            html += `<tr><td><strong>${u.email}</strong>${u.display_name ? '<br><span style="font-size:11px;color:var(--text2)">' + u.display_name + '</span>' : ''}</td><td>${badges}</td><td>${cr}</td><td>${ll}</td><td class="actions-cell"><button class="btn" onclick="viewUser(${u.id})">Ver</button>${u.is_blocked ? `<button class="btn btn-success" onclick="toggleBlock(${u.id})">Desbloquear</button>` : `<button class="btn btn-danger" onclick="toggleBlock(${u.id})">Bloquear</button>`}</td></tr>`;
+        }
+        html += '</tbody></table>';
+        html += `<div class="pagination"><span>Mostrando ${offset+1}-${Math.min(offset+PS,d.total)} de ${d.total}</span><div class="pagination-btns"><button class="btn" ${currentPage===0?'disabled':''} onclick="currentPage--;loadUsers()">Anterior</button><button class="btn" ${currentPage>=tp-1?'disabled':''} onclick="currentPage++;loadUsers()">Proximo</button></div></div>`;
+        document.getElementById('users-table-container').innerHTML = html;
+    } catch (e) { document.getElementById('users-table-container').innerHTML = '<div class="loading">Erro ao carregar</div>'; }
+}
+
+async function viewUser(uid) {
+    const modal = document.getElementById('user-modal'), body = document.getElementById('modal-body'), acts = document.getElementById('modal-actions');
+    body.innerHTML = '<div class="loading">Carregando...</div>'; acts.innerHTML = ''; modal.classList.add('active');
+    try {
+        const r = await fetch(`/api/admin/users/${uid}`);
+        const u = await r.json();
+        const cr = u.created_at ? new Date(u.created_at*1000).toLocaleString('pt-BR') : '-';
+        const ll = u.last_login ? new Date(u.last_login*1000).toLocaleString('pt-BR') : 'Nunca';
+        const chs = u.channels.map(c => c.service).join(', ') || 'Nenhum';
+        document.getElementById('modal-title').textContent = u.email;
+        body.innerHTML = `
+            <div class="modal-row"><span class="label">ID</span><span>${u.id}</span></div>
+            <div class="modal-row"><span class="label">Email</span><span>${u.email}</span></div>
+            <div class="modal-row"><span class="label">Nome</span><span>${u.display_name||'-'}</span></div>
+            <div class="modal-row"><span class="label">Slug</span><span>${u.slug||'-'}</span></div>
+            <div class="modal-row"><span class="label">Cadastro</span><span>${cr}</span></div>
+            <div class="modal-row"><span class="label">Ultimo Acesso</span><span>${ll}</span></div>
+            <div class="modal-row"><span class="label">Admin</span><span>${u.is_admin?'Sim':'Nao'}</span></div>
+            <div class="modal-row"><span class="label">Bloqueado</span><span>${u.is_blocked?'Sim':'Nao'}</span></div>
+            <div class="modal-row"><span class="label">Canais</span><span>${chs}</span></div>
+            <div class="modal-row"><span class="label">Lojas Favoritas</span><span>${u.total_favoritas}</span></div>
+            <div class="modal-row"><span class="label">Historico</span><span>${u.total_historico} registros</span></div>
+            <div class="modal-row"><span class="label">Promocoes</span><span>${u.total_promotions}</span></div>`;
+        acts.innerHTML = `
+            ${u.is_blocked ? `<button class="btn btn-success" onclick="toggleBlock(${u.id});closeModal()">Desbloquear</button>` : `<button class="btn btn-danger" onclick="toggleBlock(${u.id});closeModal()">Bloquear</button>`}
+            ${u.is_admin ? `<button class="btn" onclick="setAdmin(${u.id},false);closeModal()">Remover Admin</button>` : `<button class="btn btn-primary" onclick="setAdmin(${u.id},true);closeModal()">Tornar Admin</button>`}`;
+    } catch (e) { body.innerHTML = '<div class="loading">Erro ao carregar</div>'; }
+}
+
+async function toggleBlock(uid) { await fetch(`/api/admin/users/${uid}/toggle-block`,{method:'POST'}); loadUsers(); }
+async function setAdmin(uid,v) { await fetch(`/api/admin/users/${uid}/set-admin`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({is_admin:v})}); loadUsers(); }
+function closeModal() { document.getElementById('user-modal').classList.remove('active'); }
+document.getElementById('user-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+loadDash();
+</script>
+</body>
+</html>

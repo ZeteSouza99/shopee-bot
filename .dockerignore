@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+data/
+.env
+*.db
+*.db-wal
+*.db-shm
+.git/
+.vscode/
+evolution/
+*.bak

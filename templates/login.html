@@ -3,106 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Shopee Afiliados</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #F5F5F5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-container {
-            background: white;
-            border-radius: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .login-logo {
-            font-size: 40px;
-            margin-bottom: 8px;
-        }
-        .login-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #222;
-            margin-bottom: 4px;
-        }
-        .login-subtitle {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 28px;
-        }
-        .form-group {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #666;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #EE4D2D;
-            box-shadow: 0 0 0 3px rgba(238,77,45,0.1);
-        }
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: #EE4D2D;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-login:hover { background: #D73211; }
-        .error-msg {
-            background: #FFF3F0;
-            border: 1px solid #FFCCC7;
-            color: #CF1322;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-        .register-link {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-        }
-        .register-link a {
-            color: #EE4D2D;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .register-link a:hover { text-decoration: underline; }
-    </style>
+    <title>Login — AffiliateHub</title>
+    <link rel="stylesheet" href="/static/css/auth.css">
 </head>
 <body>
     <div class="login-container">
-        <div class="login-logo">&#128722;</div>
-        <h1 class="login-title">Shopee Afiliados</h1>
+        <div class="login-logo">A</div>
+        <h1 class="login-title">AffiliateHub</h1>
         <p class="login-subtitle">Acesse o painel de controle</p>
 
         {% if error %}
@@ -122,7 +29,7 @@
         </form>
 
         <div class="register-link">
-            Ainda nao tem conta? <a href="/register">Criar conta</a>
+            Ainda não tem conta? <a href="/register">Criar conta</a>
         </div>
     </div>
 </body>

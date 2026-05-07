@@ -16,6 +16,7 @@ Endpoints Evolution API utilizados:
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
@@ -94,19 +95,66 @@ class WhatsAppChannel(SocialChannel):
         return r.json()
 
     def fetch_groups(self) -> list:
-        """Lista todos os grupos do WhatsApp conectado."""
+        """Lista grupos do WhatsApp via findChats + findGroupInfos.
+
+        O endpoint fetchAllGroups do Evolution API v1.8.x retorna corpo vazio
+        mesmo havendo grupos. Solucao: usar findChats para obter IDs de grupos
+        (@g.us) e depois buscar nomes via findGroupInfos em paralelo.
+        """
+        # Passo 1: buscar todos os chats
         r = requests.get(
-            f"{self.api_url}/group/fetchAllGroups/{self.instance_name}",
-            params={"getParticipants": "false"},
+            f"{self.api_url}/chat/findChats/{self.instance_name}",
             headers=self._headers(),
-            timeout=15,
+            timeout=20,
         )
         r.raise_for_status()
-        data = r.json()
-        # Evolution API retorna lista direta ou dentro de chave
-        if isinstance(data, list):
-            return data
-        return data.get("groups", data.get("data", []))
+        if not r.content:
+            return []
+        chats = r.json()
+        if not isinstance(chats, list):
+            return []
+
+        # Passo 2: filtrar grupos (@g.us) e ordenar pelos mais recentes
+        group_chats = [
+            c for c in chats
+            if isinstance(c.get("id"), str) and c["id"].endswith("@g.us")
+        ]
+        group_chats.sort(key=lambda c: c.get("lastMsgTimestamp", 0), reverse=True)
+        top_groups = group_chats[:50]
+
+        if not top_groups:
+            return []
+
+        # Passo 3: buscar nome de cada grupo em paralelo via findGroupInfos
+        def _get_info(gid: str) -> dict:
+            try:
+                r2 = requests.get(
+                    f"{self.api_url}/group/findGroupInfos/{self.instance_name}",
+                    headers=self._headers(),
+                    params={"groupJid": gid},
+                    timeout=10,
+                )
+                if r2.status_code == 200 and r2.content:
+                    info = r2.json()
+                    participants = info.get("participants", [])
+                    return {
+                        "id": gid,
+                        "subject": info.get("subject") or gid,
+                        "size": len(participants) if isinstance(participants, list) else 0,
+                    }
+            except Exception:
+                pass
+            return {"id": gid, "subject": gid, "size": 0}
+
+        groups = []
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(_get_info, gc["id"]): gc["id"] for gc in top_groups}
+            for future in as_completed(futures):
+                groups.append(future.result())
+
+        # Reordenar por nome para facilitar selecao
+        groups.sort(key=lambda g: g["subject"].lower())
+        return groups
 
     def delete_instance(self) -> dict:
         """Remove a instancia da Evolution API."""
@@ -154,9 +202,10 @@ class WhatsAppChannel(SocialChannel):
         if not self.is_configured():
             return PublishResult(False, "whatsapp", "WhatsApp nao configurado")
         try:
+            # Evolution API v1.8.x requer wrapper "textMessage"
             payload = {
                 "number": self.group_id,
-                "text": text,
+                "textMessage": {"text": text},
             }
             r = requests.post(
                 f"{self.api_url}/message/sendText/{self.instance_name}",
@@ -173,11 +222,15 @@ class WhatsAppChannel(SocialChannel):
         if not self.is_configured():
             return PublishResult(False, "whatsapp", "WhatsApp nao configurado")
         try:
+            # Evolution API v1.8.x requer wrapper "mediaMessage"
             payload = {
                 "number": self.group_id,
-                "mediatype": "image",
-                "media": image_url,
-                "caption": text,
+                "mediaMessage": {
+                    "mediatype": "image",
+                    "media": image_url,
+                    "fileName": "produto.jpg",
+                    "caption": text,
+                },
             }
             r = requests.post(
                 f"{self.api_url}/message/sendMedia/{self.instance_name}",

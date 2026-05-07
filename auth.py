@@ -24,8 +24,57 @@ def login_required(f):
             if request.is_json or request.path.startswith("/api/"):
                 return jsonify({"error": "Nao autenticado"}), 401
             return redirect(url_for("login"))
+        # Verificar se usuario esta bloqueado
+        user = storage.get_user_by_id(user_id)
+        if user and user.get("is_blocked"):
+            session.clear()
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Conta bloqueada. Entre em contato com o suporte."}), 403
+            return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated
+
+
+def admin_required(f):
+    """Exige usuario autenticado E admin."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user_id = session.get("user_id")
+        if not user_id:
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Nao autenticado"}), 401
+            return redirect(url_for("login"))
+        user = storage.get_user_by_id(user_id)
+        if not user or not user.get("is_admin"):
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Acesso negado"}), 403
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def subscription_required(channel: str = None):
+    """Exige assinatura ativa com acesso ao canal especificado.
+    Admin ignora verificacao. Trial libera todos os canais."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            user_id = session.get("user_id")
+            if not user_id:
+                return jsonify({"error": "Nao autenticado"}), 401
+
+            # Admin ignora restricao
+            user = storage.get_user_by_id(user_id)
+            if user and user.get("is_admin"):
+                return f(*args, **kwargs)
+
+            access = storage.check_subscription_access(user_id, channel)
+            if not access["allowed"]:
+                return jsonify({"error": access["reason"], "subscription_required": True}), 403
+
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
 def get_current_user_id() -> int:

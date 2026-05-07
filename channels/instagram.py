@@ -66,7 +66,10 @@ class InstagramFeedChannel(SocialChannel):
                 },
                 timeout=30,
             )
-            r1.raise_for_status()
+            if not r1.ok:
+                err = r1.json().get("error", {})
+                return PublishResult(False, "instagram_feed",
+                    f"Instagram API: {err.get('message', r1.text[:200])}")
             creation_id = r1.json()["id"]
 
             time.sleep(3)
@@ -78,7 +81,10 @@ class InstagramFeedChannel(SocialChannel):
                 },
                 timeout=30,
             )
-            r2.raise_for_status()
+            if not r2.ok:
+                err = r2.json().get("error", {})
+                return PublishResult(False, "instagram_feed",
+                    f"Instagram publish: {err.get('message', r2.text[:200])}")
             return PublishResult(True, "instagram_feed", "Publicado no Feed", r2.json())
         except Exception as e:
             return PublishResult(False, "instagram_feed", str(e))
@@ -120,7 +126,10 @@ class InstagramStoriesChannel(SocialChannel):
                 },
                 timeout=30,
             )
-            r1.raise_for_status()
+            if not r1.ok:
+                err = r1.json().get("error", {})
+                return PublishResult(False, "instagram_stories",
+                    f"Instagram API: {err.get('message', r1.text[:200])}")
             creation_id = r1.json()["id"]
 
             time.sleep(3)
@@ -132,7 +141,10 @@ class InstagramStoriesChannel(SocialChannel):
                 },
                 timeout=30,
             )
-            r2.raise_for_status()
+            if not r2.ok:
+                err = r2.json().get("error", {})
+                return PublishResult(False, "instagram_stories",
+                    f"Instagram publish: {err.get('message', r2.text[:200])}")
             return PublishResult(True, "instagram_stories", "Publicado nos Stories", r2.json())
         except Exception as e:
             return PublishResult(False, "instagram_stories", str(e))
